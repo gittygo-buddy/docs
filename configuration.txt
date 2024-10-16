@@ -36,3 +36,11 @@ jobs:
 
           echo "JSON validation completed successfully."
         displayName: 'Validate JSON Files'
+
+         # Step to publish artifacts
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(System.DefaultWorkingDirectory)/grxttnlo'  # Path to the folder containing artifacts
+          ArtifactName: 'SynapseArtifacts'  # Name of the artifact
+          publishLocation: 'Container'  # Publish location
+        displayName: 'Publish Artifacts'
