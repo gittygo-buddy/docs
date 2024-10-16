@@ -1,0 +1,27 @@
+trigger:
+  branches:
+    include:
+      - workspace_publish
+  
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+  - checkout: self
+  
+  # Optional: Validate JSON files for Synapse artifacts
+  - task: CmdLine@2
+    inputs:
+      script: |
+        echo "Validating JSON files..."
+        for %i in (pipelines/*.json) do (
+          jq empty %i || exit 1
+        )
+    displayName: 'Validate Synapse Pipelines JSON'
+
+  # Publish artifacts to be deployed
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/synapse'
+      ArtifactName: 'synapse-artifacts'
+      publishLocation: 'Container'
