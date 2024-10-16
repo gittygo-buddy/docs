@@ -1,27 +1,38 @@
 trigger:
   branches:
     include:
-      - workspace_publish
-  
-pool:
-  vmImage: 'windows-latest'
+      - workspace_publish  # Trigger the pipeline when changes are made to the workspace_publish branch
 
-steps:
-  - checkout: self
-  
-  # Optional: Validate JSON files for Synapse artifacts
-  - task: CmdLine@2
-    inputs:
-      script: |
-        echo "Validating JSON files..."
-        for %i in (pipelines/*.json) do (
-          jq empty %i || exit 1
-        )
-    displayName: 'Validate Synapse Pipelines JSON'
+jobs:
+  - job: ValidateJSONFiles
+    pool:
+      vmImage: 'windows-latest'  # Use a Windows agent for the job
+    steps:
+      - checkout: self  # Checkout the current repository to access files
 
-  # Publish artifacts to be deployed
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(System.DefaultWorkingDirectory)/synapse'
-      ArtifactName: 'synapse-artifacts'
-      publishLocation: 'Container'
+      - script: |
+          echo "Current Directory: $(System.DefaultWorkingDirectory)"
+          echo "Listing files in grxttnlo directory:"
+          dir grxttnlo  # List files in the grxttnlo directory
+
+          echo "Starting JSON validation..."
+          setlocal enabledelayedexpansion
+          set foundJsonFile=false
+
+          for %%i in (grxttnlo\*.json) do (
+            set foundJsonFile=true
+            echo "Processing file: %%i"
+            jq empty "%%i"  # Validate JSON file with jq
+            if !errorlevel! neq 0 (
+              echo "Error processing file: %%i"
+              exit /b 1  # Exit with error if JSON validation fails
+            )
+          )
+
+          if not !foundJsonFile! == true (
+            echo "No JSON files found in grxttnlo directory."
+            exit /b 0  # Exit successfully if no JSON files are found
+          )
+
+          echo "JSON validation completed successfully."
+        displayName: 'Validate JSON Files'
